@@ -1,0 +1,6 @@
+path: /Users/murtaza/Desktop/Gas-Bottle-Project/dataset
+train: images/train
+val: images/val
+test: images/test
+names:
+  0: gas_bottle

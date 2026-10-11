@@ -1,0 +1,193 @@
+{
+  "seed": 42,
+  "class_names": {
+    "0": "gas_bottle"
+  },
+  "related_group_kept_in_train": [
+    "commons_90473360",
+    "commons_90473364"
+  ],
+  "splits": {
+    "train": [
+      {
+        "image": "commons_115344996.jpg",
+        "boxes": 2,
+        "sha256": "09b952d3bf9dda2ca4fdb2c4f5d95b59311a8fb14f9ebfceec7895081b5dac1d"
+      },
+      {
+        "image": "commons_116212940.jpg",
+        "boxes": 3,
+        "sha256": "f831894a2c75c0d02413042360863785a81b3162b5b44b1bc746d6cb2b38310f"
+      },
+      {
+        "image": "commons_159645280.jpg",
+        "boxes": 19,
+        "sha256": "ce30e42dba8776e5f0e03df0ed31b71092dce4d2595f99f229e2b9466b76e5c0"
+      },
+      {
+        "image": "commons_168490477.jpg",
+        "boxes": 8,
+        "sha256": "205303d2eedb10770279f9b9002dbf4495896205a33ff0a55f48cc5027d24754"
+      },
+      {
+        "image": "commons_17279214.jpg",
+        "boxes": 1,
+        "sha256": "6bb0daffdd1d35c4873701f8cf9185b3e17e6b54eab8489b1c8ed05b46752eac"
+      },
+      {
+        "image": "commons_17671638.jpg",
+        "boxes": 1,
+        "sha256": "0d2dffabfdc69b3204f56c26521d45d5a952bd4b665070bd37f7c227a3caa19a"
+      },
+      {
+        "image": "commons_18574992.jpg",
+        "boxes": 1,
+        "sha256": "94e7164d951bd92a1bd2544828ccbaa504a4eb6948f946bbb192338a8606fbb8"
+      },
+      {
+        "image": "commons_185835117.jpg",
+        "boxes": 4,
+        "sha256": "8d377b35ca07d58404b0531e5b0aab95995bb771b8b5e1a135bb64d0d86fc990"
+      },
+      {
+        "image": "commons_23976262.jpg",
+        "boxes": 1,
+        "sha256": "b699af46fd1b3b72cfabbb4aec0b8260ee894669e76551fdb819ef12995d6c46"
+      },
+      {
+        "image": "commons_29435922.jpg",
+        "boxes": 1,
+        "sha256": "d972a6a6f662bd272ef5b1a3043c54350ebd499a9748ca228f3e8e76159b51b4"
+      },
+      {
+        "image": "commons_41573966.jpg",
+        "boxes": 4,
+        "sha256": "ca1482a5b9c583daa83cb31ec28f808093db6c5bcd42c475aa93b10d50b4c163"
+      },
+      {
+        "image": "commons_42290595.jpg",
+        "boxes": 47,
+        "sha256": "3c81adb7046801c43799670658ea2e2d16132d327435366b44d39ed51dbc6962"
+      },
+      {
+        "image": "commons_45743176.jpg",
+        "boxes": 1,
+        "sha256": "7d5372bf70a45064c88dac85c486e05781331c5e1c42e7b127db74e380b6162c"
+      },
+      {
+        "image": "commons_50286183.jpg",
+        "boxes": 5,
+        "sha256": "5a30b1239f9143f7ec73f55462086f4c005fdf09abb9b702f9d4aa457a208bd6"
+      },
+      {
+        "image": "commons_71536265.jpg",
+        "boxes": 1,
+        "sha256": "7933cc9894bbe33eb26f6323514df5b8fa1b3211a440d39ae088ec54f5b1c74d"
+      },
+      {
+        "image": "commons_71545460.jpg",
+        "boxes": 1,
+        "sha256": "0d2aeccf738fb4c719c4c98cb7c6f26ee2c6b1436e7d4c0717e98d001295efd3"
+      },
+      {
+        "image": "commons_72081293.jpg",
+        "boxes": 1,
+        "sha256": "0677d6fddb768820d5e1f08ad51431cd670224e37efd0003164d31db45b83a3d"
+      },
+      {
+        "image": "commons_73651769.jpg",
+        "boxes": 47,
+        "sha256": "5bdefb54333df8b722c08207b792f2c420ab14715dbe06b8bd09270a6069e994"
+      },
+      {
+        "image": "commons_7715892.jpg",
+        "boxes": 2,
+        "sha256": "eb3df1647fa4ef4cb5e07307dee78d077efa33eec4a32de54c2847609b0baf87"
+      },
+      {
+        "image": "commons_79084676.jpg",
+        "boxes": 37,
+        "sha256": "a42d10626d4fc3312d4352c30f91ea6dcecd3098b2e757f6262413096deed7c7"
+      },
+      {
+        "image": "commons_80022877.jpg",
+        "boxes": 28,
+        "sha256": "3a755c14c21c2d647dee77baef92e076cf45cd5304462f77ad15a8b3f2b03b73"
+      },
+      {
+        "image": "commons_90473360.jpg",
+        "boxes": 4,
+        "sha256": "2f414503d568c1d9ddcb0163fa0d824fd9abdba181ad9aaf13bb0b363c371cba"
+      },
+      {
+        "image": "commons_90473364.jpg",
+        "boxes": 5,
+        "sha256": "0db404239a209b240f5966a4c5000f848515e4a914bf82fdeba3840450f0d9a3"
+      },
+      {
+        "image": "commons_91410759.jpg",
+        "boxes": 5,
+        "sha256": "0111b4fb6da77b7b5716be4cf92ece6bb26054cbae0fe0d2febc50eeaf51e2e5"
+      },
+      {
+        "image": "commons_92208795.jpg",
+        "boxes": 4,
+        "sha256": "47925de0915116d82dfefec4cce37af2c3618fa8a0f6629b199172c3d235b195"
+      }
+    ],
+    "val": [
+      {
+        "image": "commons_13463479.jpg",
+        "boxes": 58,
+        "sha256": "6d82e4d0a413cc4345e19e5e1712b817d0b8a45e1ad932b929fca327dc7f0f52"
+      },
+      {
+        "image": "commons_36585662.jpg",
+        "boxes": 1,
+        "sha256": "65a05487e68cfe2260632384ddbace8c5c15f2484f786f71b368e401f6616f31"
+      },
+      {
+        "image": "commons_3694116.jpg",
+        "boxes": 1,
+        "sha256": "6035b503cc71612d8880b8a1ee45aedbeb2f447990c0af31eb16f04b3d21f6a6"
+      },
+      {
+        "image": "commons_48862243.jpg",
+        "boxes": 2,
+        "sha256": "c79479c2d1ecd59979259e92f15ac0131a20a56f7aa5e969291aabc33966bdba"
+      },
+      {
+        "image": "commons_58179965.jpg",
+        "boxes": 23,
+        "sha256": "a7bfd3bc7a8bc72417021e619bf72991ae73fc2d547a8fd452c75e412a6a862d"
+      }
+    ],
+    "test": [
+      {
+        "image": "commons_11881619.jpg",
+        "boxes": 14,
+        "sha256": "20c61b7b009d7c3bb627bc5480e5ef30b387dc433069c1ce5fd80cf68a8857d5"
+      },
+      {
+        "image": "commons_180114158.jpg",
+        "boxes": 1,
+        "sha256": "d985de4116f5fa2535b84ea2baaeda257f54e0c18009a26f91c00f03c88111f5"
+      },
+      {
+        "image": "commons_39590510.jpg",
+        "boxes": 3,
+        "sha256": "dcc67ef5a2ff687e4c9afd1d7f14d1c670e90bb76f415741c3bea02c83c78957"
+      },
+      {
+        "image": "commons_6336975.jpg",
+        "boxes": 1,
+        "sha256": "9b85ce19940ad6ef84161741de8c9e9c91f5efef32cb07cce181c887e806a82b"
+      },
+      {
+        "image": "commons_92779676.jpg",
+        "boxes": 11,
+        "sha256": "f870aef420310056815de446c50d638dd9948b1a02c36d4160502d768a9c63f8"
+      }
+    ]
+  }
+}
