@@ -1,1 +1,25 @@
-...
+# Primagaz gas bottle detection and tracking
+
+Group 3 project for AI Applications. This repository contains the first gas-bottle detector, a single-video ByteTrack experiment, and their evaluation artifacts.
+
+## Workshop 4 progress
+
+The project now includes a first synchronized multi-video tracking prototype in `track_multivideo.py`. It runs a separate ByteTrack tracker per camera and associates local tracks to shared, monotonically allocated global IDs using bottle-crop color and shape similarity. This is unvalidated prototype code: the clips must share a start time and frame rate, and appearance matches can be wrong. The detector was trained on 35 general gas-cylinder images and still misses bottles in crowded scenes and produces duplicate detections. No Primagaz station videos or AWS bottle-level log are present in this clone, so target-camera tracking and OK/NOK classification still need data collection and annotation.
+
+The concise submission report is in [reports/Workshop_4_Progress_Report.docx](reports/Workshop_4_Progress_Report.docx). Detailed experiments are recorded in [results_notes.md](results_notes.md).
+
+Open work is tracked in GitHub:
+
+- Synchronized bottle identities across station videos: https://github.com/MohammadMurtazaQanie/Group--3---Primagaz-GASS/issues/1
+- Primagaz station videos and bottle-level ground truth: https://github.com/MohammadMurtazaQanie/Group--3---Primagaz-GASS/issues/2
+- OK/NOK visual classification target and baseline: https://github.com/MohammadMurtazaQanie/Group--3---Primagaz-GASS/issues/3
+
+## Current experiment entry points
+
+- `train_bottles.py` trains the bottle detector.
+- `eval_test.py` evaluates the selected detector on the held-out image split.
+- `track_bottles.py` runs the single-video ByteTrack experiment.
+- `track_multivideo.py` runs the synchronized multi-video global-ID prototype. Example: `python track_multivideo.py --video cam1=cam1.mp4 --video cam2=cam2.mp4`. Inputs must be synchronized to the same start and frame rate.
+- `results_notes.md` documents metrics, observations, and limitations.
+
+The stock Getty preview video used for the tracking experiment has uncleared publishing rights; do not use it in a public demo.

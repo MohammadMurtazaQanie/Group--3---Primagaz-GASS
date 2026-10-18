@@ -79,3 +79,12 @@
   - 21 IDs for ~10 cylinders while only ~2 are found per frame: IDs come mostly from short-lived
     and false detections, so counting by unique IDs would be unreliable.
   - The Getty watermark lies over the cylinders and may reduce detections (not tested).
+
+## Workshop 4 progress update (18 Oct 2026)
+- Prepared `reports/Workshop_4_Progress_Report.docx` as the concise assignment submission.
+- Added `track_multivideo.py`, a first synchronized multi-video prototype. It runs independent ByteTrack trackers for each camera, then attempts to associate local tracks with shared, monotonically allocated global IDs using HSV color histograms and bounding-box shape similarity. It writes annotated per-camera videos and a CSV track table.
+- Prototype assumption: input files are already synchronized to the same start time and frame rate. The appearance matcher is heuristic and has not been validated; matches may be wrong, especially across different camera views.
+- The local clone has no Primagaz station videos, extra 14_43 videos, or AWS per-bottle logfile. Current detector/tracker results are from general cylinder images and an unrelated stock clip, so they do not establish station performance.
+- OK/NOK classification has not been trained. First define visible NOK reasons with the process expert and collect bottle-linked station images plus operator status and expert-reviewed labels.
+- GitHub follow-up issues: https://github.com/MohammadMurtazaQanie/Group--3---Primagaz-GASS/issues/1, https://github.com/MohammadMurtazaQanie/Group--3---Primagaz-GASS/issues/2, https://github.com/MohammadMurtazaQanie/Group--3---Primagaz-GASS/issues/3.
+- The Getty preview clip's publishing rights are uncleared; it is for internal experiments only and is not a public demo asset.
