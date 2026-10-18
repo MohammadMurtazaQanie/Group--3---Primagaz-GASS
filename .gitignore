@@ -9,3 +9,10 @@ images nok bottles taken at primagaz plant/
 
 
 
+clips/
+station_frames/
+.claude_tmp/
+runs/detect/runs/
+station_dataset/
+task_*/
+runs/sync/
