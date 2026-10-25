@@ -1,11 +1,3 @@
-"""First OCR test (WS5 goal 2): can we read the tare weight and the year from the bottle crops?
-
-Reads the 3 camera crops of each bottle with EasyOCR, looks for a year (2020-2049) and a
-tare weight (9.5-17.5 kg), and compares them with the ground truth from link_labels.py.
-
-Usage:
-  python ocr_bottles.py --run runs/sync/full_14_55 --limit 30
-"""
 import argparse
 import glob
 import re
@@ -18,13 +10,11 @@ import pandas as pd
 
 
 def read_year(text):
-    # a year printed on the bottle, e.g. "2034"; take the one seen most often
     years = re.findall(r"(?<!\d)(20[2-4]\d)(?!\d)", text)
     return Counter(years).most_common(1)[0][0] if years else None
 
 
 def read_tare(text):
-    # tare printed like "10.6KG", "10,6 KG", "10 6KG"; OCR often reads K as K/KC/K6
     text = text.replace(",", ".").replace("O", "0")
     found = []
     for a, b in re.findall(r"(?<![\d.])(1[0-7]|9)[. ]?(\d)(?=\s*[KG6C]|\b)", text):
@@ -52,7 +42,7 @@ def main():
         texts = []
         for path in sorted(glob.glob(f"{args.run}/crops/bottle{gid:04d}_*.jpg")):
             image = cv2.imread(path)
-            if image.shape[1] < 600:  # small text reads better after upscaling
+            if image.shape[1] < 600:
                 scale = 600 / image.shape[1]
                 image = cv2.resize(image, None, fx=scale, fy=scale)
             texts += [t for _, t, conf in reader.readtext(image) if conf > 0.2]
@@ -71,7 +61,6 @@ def main():
     out.to_csv(f"{args.run}/ocr_results.csv", index=False)
     seconds = (time.time() - start) / max(len(out), 1)
 
-    # only bottles where the Excel has a real value count for the score
     has_year = out.year_gt.str.match(r"^20\d\d")
     has_tare = out.tare_gt.str.match(r"^\d")
     year_ok = (out.year_ocr == out.year_gt.str[:4]) & has_year

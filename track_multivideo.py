@@ -1,10 +1,3 @@
-"""Prototype synchronized multi-camera bottle tracking with shared global IDs.
-
-Inputs must be pre-synchronized to the same start time and frame rate. Each
-camera keeps its own ByteTrack state; local tracks are associated across views
-using a simple HSV appearance histogram and box-shape score. This heuristic is
-for an initial experiment and requires validation on station footage.
-"""
 from __future__ import annotations
 
 import argparse
@@ -134,7 +127,7 @@ def main() -> None:
 
                 timestamp = frame_index / reference_fps
                 observations = []
-                # Each camera owns an independent tracker; mapping is shared.
+
                 for index, camera in enumerate(cameras):
                     frame = frames.get(camera)
                     if frame is None:
@@ -159,7 +152,6 @@ def main() -> None:
                             detections.append((local_id, box, float(confidences[det_index]), histogram, aspect_ratio))
                     observations.append((camera, frame, detections))
 
-                # Clear per-frame camera visibility before matching this synchronized batch.
                 for track in global_tracks.values():
                     if track.seen_frame != frame_index:
                         track.seen_frame = frame_index
@@ -172,7 +164,7 @@ def main() -> None:
                         global_id = local_to_global.get(mapping_key)
                         if global_id is not None:
                             track = global_tracks[global_id]
-                            # Avoid assigning one physical ID to two simultaneous detections in a camera.
+
                             if camera in track.seen_cameras:
                                 global_id = None
 
@@ -208,7 +200,7 @@ def main() -> None:
                             track.last_seen_seconds = timestamp
                             track.seen_cameras.add(camera)
                         else:
-                            # A duplicate same-camera detection cannot safely share a global ID.
+
                             global_id = next_global_id
                             next_global_id += 1
                             local_to_global[mapping_key] = global_id

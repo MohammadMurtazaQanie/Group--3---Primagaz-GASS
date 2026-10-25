@@ -1,13 +1,3 @@
-"""Measure the OK/NOK classifier per image and per bottle.
-
-Per bottle: the bottle is pushed out (NOK) if ANY of its camera views scores
-above the threshold. With a 100% NOK-recall target, missing a bad bottle is
-worse than pushing out one good bottle too many.
-
-Results are shown at the standard threshold 0.5, and at the threshold that
-would be needed to catch EVERY NOK bottle in the test set (100% recall, the
-Primagaz target), to show how many good bottles that would cost.
-"""
 import argparse
 import re
 from collections import defaultdict
@@ -19,14 +9,12 @@ folder = Path(__file__).resolve().parent
 
 
 def bottle_key(path):
-    """Images of the same bottle share a key (all camera views, all copies)."""
     name = re.sub(r"_copy\d+", "", path.stem)
     match = re.match(r"(\d+_\d+)_bottle(\d+)_", name)
-    return f"{match.group(1)}_{match.group(2)}" if match else name   # plant photo = its own key
+    return f"{match.group(1)}_{match.group(2)}" if match else name
 
 
 def nok_scores(model, split):
-    """{bottle: (true label, highest NOK probability over its images)}, plus per-image list."""
     per_image, per_bottle = [], defaultdict(lambda: [None, 0.0])
     for label in ("ok", "nok"):
         files = sorted(p for p in (folder / "cls_dataset" / split / label).glob("*.jpg") if "_copy" not in p.stem)

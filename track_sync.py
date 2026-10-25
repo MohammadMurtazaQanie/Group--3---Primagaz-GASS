@@ -1,27 +1,3 @@
-"""Synchronised bottle tracking over the 3 Primagaz station cameras.
-
-Every bottle gets ONE global ID that is the same in all cameras and that
-increases (1, 2, 3, ...) in the order the bottles pass.
-
-How it works:
-1. Track bottles in each camera separately with YOLO + ByteTrack.
-2. Throw away noise: tracks that are too short or too small
-   (flickers, bottles far away in the background).
-3. For every remaining track, find the moment its centre passes the middle
-   of the image. That is the "passing time" of the bottle in that camera.
-4. The cameras look at the same spot from different sides, so a bottle passes
-   them at almost the same time. We measure the small time offset of each
-   camera against the front camera and correct for it.
-5. Passing times that fall close together (from any camera) belong to the
-   same bottle. Bottles are numbered in time order -> global IDs.
-5b. Optional (--classifier): every bottle crop goes through the OK/NOK
-   classifier; a bottle is NOK if any camera view is NOK.
-6. Write a CSV with the bottles, one crop per bottle per camera
-   (crops/bottleNNNN_camera.jpg, for the OK/NOK classifier) and a
-   side-by-side demo video.
-
-The videos must be synchronised (same start, same frame rate).
-"""
 import argparse
 import csv
 from pathlib import Path
@@ -35,17 +11,11 @@ CAMERAS = ["front", "back_left", "back_right"]
 
 
 def track_camera(model_path, video, conf, device, stride=1):
-    """Track one video.
-
-    Returns {track_id: list of (frame, x1, y1, x2, y2, confidence)} and
-    {track_id: crop}: for every track the bottle crop taken when the box centre
-    was closest to the middle of the image (the sharpest, most central view).
-    """
     model = YOLO(str(model_path))
     tracks, crops, best_distance = {}, {}, {}
     for step, result in enumerate(model.track(str(video), tracker="bytetrack.yaml", vid_stride=stride,
                                               conf=conf, device=device, stream=True, verbose=False)):
-        frame = step * stride   # frame number in the original video
+        frame = step * stride   
         if result.boxes.id is None:
             continue
         image = result.orig_img
@@ -99,8 +69,8 @@ def main():
     width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
     cap.release()
 
-    # 1-3: track each camera, filter noise, find passing times
-    passings = {}   # camera -> list of (passing_frame, track_id)
+
+    passings = {}   
     all_tracks = {}
     all_crops = {}
     for cam in CAMERAS:
@@ -116,7 +86,7 @@ def main():
         passings[cam] = sorted(kept)
         print(f"  {len(tracks)} raw tracks, {len(kept)} bottle passings", flush=True)
 
-    # 4: time offset of each camera against the front camera (median of nearest differences)
+
     reference = np.array([f for f, _ in passings["front"]])
     offsets = {"front": 0}
     for cam in ["back_left", "back_right"]:
@@ -124,11 +94,11 @@ def main():
         offsets[cam] = int(np.median(diffs)) if diffs else 0
     print("Camera offsets vs front (frames):", offsets)
 
-    # 5: merge all passings in time order; close passings = same bottle
+
     events = sorted((f - offsets[cam], cam, tid) for cam in CAMERAS for f, tid in passings[cam])
     window = args.window * fps
-    global_of = {}           # (camera, track_id) -> global id
-    bottles = []             # list of dicts
+    global_of = {}           
+    bottles = []
     for t, cam, tid in events:
         if not bottles or t - bottles[-1]["time"] > window:
             bottles.append({"id": len(bottles) + 1, "time": t, "cams": {}})
@@ -149,7 +119,7 @@ def main():
             crop = all_crops[cam].get(tid)
             if crop is not None and crop.size:
                 cv2.imwrite(str(crop_dir / f"bottle{b['id']:04d}_{cam}.jpg"), crop)
-    # OK/NOK decision per bottle: highest NOK probability over its camera views
+
     if args.classifier:
         classifier = YOLO(args.classifier)
         nok_index = [k for k, v in classifier.names.items() if v == "nok"][0]
@@ -180,8 +150,8 @@ def main():
     if args.no_video:
         return
 
-    # 6: side-by-side demo video with the global IDs
-    boxes = {cam: {} for cam in CAMERAS}   # cam -> frame -> list of (box, gid)
+
+    boxes = {cam: {} for cam in CAMERAS}   
     for cam in CAMERAS:
         for tid, rows in all_tracks[cam].items():
             gid = global_of.get((cam, tid))

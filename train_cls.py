@@ -1,4 +1,3 @@
-"""Train the OK/NOK bottle classifier (YOLO11n-cls, pretrained on ImageNet)."""
 import sys
 from pathlib import Path
 import torch
@@ -8,9 +7,9 @@ folder = Path(__file__).resolve().parent
 
 if __name__ == "__main__":
     device = "mps" if torch.backends.mps.is_available() else "cpu"
-    model = YOLO("yolo11n-cls.pt")          # small pretrained classifier, downloaded automatically
+    model = YOLO("yolo11n-cls.pt")
     model.train(
-        data=str(folder / "cls_dataset"),   # folders train/val with subfolders ok/ and nok/
+        data=str(folder / "cls_dataset"),
         epochs=30,
         imgsz=224,
         batch=32,

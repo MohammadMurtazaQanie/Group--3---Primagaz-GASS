@@ -1,20 +1,3 @@
-"""Build the OK/NOK classification dataset.
-
-Every image is a bottle crop, exactly as track_sync.py cuts it from the video
-(this is also how the classifier will see bottles in the final application).
-
-Label = the lector's visual 'classification' column in the ground-truth Excel
-(nok = big visual damage, really dirty, or a different/old bottle type).
-Bottles pushed out for other reasons (tare weight, year) stay 'ok' here,
-because a picture classifier cannot see those; that is the OCR's job.
-
-Splits (always by bottle, never by single image, so the three camera views of
-one bottle are never split over train and test):
-  train / val : the other session (every 5th bottle -> val)
-                + the plant NOK photos (80% train, 20% val), bottle cut out with our detector
-  test        : --test-session (default 14_43), a different recording, used once at the end
-NOK images in train are copied 3x, because NOK bottles are rare.
-"""
 import argparse
 import csv
 import random
@@ -29,8 +12,8 @@ runs = folder / "runs" / "sync"
 plant_dir = folder / "images nok bottles taken at primagaz plant"
 detector = folder / "runs" / "detect" / "station_v1" / "weights" / "best.pt"
 out = folder / "cls_dataset"
-SIZE = 320          # crops are stored with their longest side at 320 px
-NOK_COPIES = 3      # oversampling of NOK in train
+SIZE = 320
+NOK_COPIES = 3
 random.seed(42)
 
 
@@ -46,7 +29,6 @@ def save(image, split, label, name):
 
 
 def video_bottles(session):
-    """Yield (global_id, label, [crop paths]) for every bottle linked to the Excel."""
     run = runs / f"full_{session}"
     for row in csv.DictReader(open(run / "linked_labels.csv")):
         if not row["global_id"] or not row["excel_id"]:
@@ -66,18 +48,14 @@ train_session = "14_55" if args.test_session == "14_43" else "14_43"
 if out.exists():
     shutil.rmtree(out)
 
-# 1. video crops
 for session, split_rule in [(train_session, "trainval"), (args.test_session, "test")]:
     for gid, label, crops in video_bottles(session):
         split = "test" if split_rule == "test" else ("val" if gid % 5 == 0 else "train")
         for crop in crops:
             save(cv2.imread(str(crop)), split, label, f"{session}_{crop.name}")
 
-# 2. plant NOK photos: cut out the biggest detected bottle, like the video crops
 if args.no_plant:
     plant_dir = Path("/nonexistent")
-#    The same bottle was often photographed several times in a row, so photos
-#    taken less than 30 s apart form one group, and whole groups go to train or val.
 from datetime import datetime
 model = YOLO(str(detector))
 photos = sorted(plant_dir.glob("*.jpg"))
@@ -94,7 +72,7 @@ for photo in photos:
 random.shuffle(groups)
 val_groups = set()
 count = 0
-for g_index, group in enumerate(groups):          # first ~20% of photos (whole groups) -> val
+for g_index, group in enumerate(groups):
     if count < 0.2 * len(photos):
         val_groups.add(g_index)
         count += len(group)

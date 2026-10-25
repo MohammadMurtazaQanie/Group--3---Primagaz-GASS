@@ -42,8 +42,6 @@ def main():
     if set(records) != expected or len(records) != 35:
         raise ValueError('Expected matching images and labels for all 35 source images')
 
-    # Known related images remain in training, so their shared scene cannot leak
-    # into validation or testing. Grouping is based on visual source inspection.
     related = {'commons_90473360', 'commons_90473364'}
     if not related <= records.keys():
         raise ValueError('Known related image pair missing')
@@ -84,7 +82,6 @@ def main():
             shutil.copy2(r['image'],output/'images'/split/r['image'].name)
             shutil.copy2(r['label'],output/'labels'/split/r['label'].name)
             manifest['splits'][split].append({'image':r['image'].name,'boxes':r['boxes'],'sha256':r['sha256']})
-    # Absolute root makes this configuration usable regardless of the shell cwd.
     (output/'data.yaml').write_text(yaml.safe_dump({'path':str(output),'train':'images/train','val':'images/val','test':'images/test','names':{0:'gas_bottle'}},sort_keys=False))
     (output/'split_manifest.json').write_text(json.dumps(manifest,indent=2))
     summary=['# Dataset preparation', '', 'Source: 35 Wikimedia Commons images, manually annotated in CVAT by the student.', 'Class: gas_bottle. Total bounding boxes: '+str(sum(r['boxes'] for r in records.values()))+'.', '', '| Split | Images | Boxes |','|---|---:|---:|']

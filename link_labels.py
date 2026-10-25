@@ -1,15 +1,3 @@
-"""Link every tracked bottle (global ID from track_sync.py) to its row in the
-Primagaz ground-truth Excel, so each bottle crop gets its OK/NOK label.
-
-Idea: both lists are in passing order. Bottles can be missing on either side,
-so we align the two sequences (like aligning two DNA strings) using two clues:
-- colour: cyan bottles are easy to recognise in the crops, and the Excel lists
-  every bottle's colour. Same colour +2, different colour -3.
-- time: the Excel has the minute each bottle passed. We estimate the clock
-  time when the video started, and a pairing that is more than 1 minute off
-  is forbidden.
-Skipping a bottle costs -2. Excel rows before/after a short clip are free.
-"""
 import argparse
 from pathlib import Path
 
@@ -19,7 +7,6 @@ import pandas as pd
 
 
 def crop_colour(path):
-    """'cyan' or 'black' from the share of strongly cyan/green pixels in the crop centre."""
     image = cv2.imread(str(path))
     h, w = image.shape[:2]
     centre = image[int(h * 0.3):int(h * 0.9), int(w * 0.2):int(w * 0.8)]
@@ -34,8 +21,6 @@ def excel_colour(value):
 
 
 def align(ours, theirs, our_min, their_min):
-    """Alignment of two colour lists; Excel rows at the start/end may be skipped for free.
-    Returns list of (i or None, j or None)."""
     match, mismatch, gap, forbidden = 2, -3, -2, -1e6
     n, m = len(ours), len(theirs)
 
@@ -45,13 +30,13 @@ def align(ours, theirs, our_min, their_min):
         return match if ours[i] == theirs[j] else mismatch
 
     score = np.zeros((n + 1, m + 1))
-    score[:, 0] = np.arange(n + 1) * gap        # skipping our bottles costs
-    score[0, :] = 0                             # skipping leading Excel rows is free
+    score[:, 0] = np.arange(n + 1) * gap
+    score[0, :] = 0
     for i in range(1, n + 1):
         for j in range(1, m + 1):
             score[i, j] = max(score[i - 1, j - 1] + pair_score(i - 1, j - 1),
                               score[i - 1, j] + gap, score[i, j - 1] + gap)
-    j = int(np.argmax(score[n, :]))             # trailing Excel rows are free
+    j = int(np.argmax(score[n, :]))
     pairs = [(None, k) for k in range(m - 1, j - 1, -1)]
     i = n
     while i > 0 or j > 0:
@@ -67,8 +52,6 @@ def align(ours, theirs, our_min, their_min):
 
 
 def estimate_start(times_s, truth_minutes, clip_start):
-    """Clock time (seconds after the first Excel minute) at which the video started,
-    chosen so the bottles-per-minute counts match the Excel best."""
     first = truth_minutes.min()
     excel_counts = truth_minutes.value_counts()
     best = None
