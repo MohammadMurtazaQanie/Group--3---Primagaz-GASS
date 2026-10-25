@@ -16,3 +16,5 @@ runs/detect/runs/
 station_dataset/
 task_*/
 runs/sync/
+cls_dataset/
+runs/classify/

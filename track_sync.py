@@ -14,7 +14,11 @@ How it works:
    camera against the front camera and correct for it.
 5. Passing times that fall close together (from any camera) belong to the
    same bottle. Bottles are numbered in time order -> global IDs.
-6. Write a CSV with the bottles and a side-by-side demo video.
+5b. Optional (--classifier): every bottle crop goes through the OK/NOK
+   classifier; a bottle is NOK if any camera view is NOK.
+6. Write a CSV with the bottles, one crop per bottle per camera
+   (crops/bottleNNNN_camera.jpg, for the OK/NOK classifier) and a
+   side-by-side demo video.
 
 The videos must be synchronised (same start, same frame rate).
 """
@@ -30,18 +34,32 @@ from ultralytics import YOLO
 CAMERAS = ["front", "back_left", "back_right"]
 
 
-def track_camera(model_path, video, conf, device):
-    """Return {track_id: list of (frame, x1, y1, x2, y2, confidence)} for one video."""
+def track_camera(model_path, video, conf, device, stride=1):
+    """Track one video.
+
+    Returns {track_id: list of (frame, x1, y1, x2, y2, confidence)} and
+    {track_id: crop}: for every track the bottle crop taken when the box centre
+    was closest to the middle of the image (the sharpest, most central view).
+    """
     model = YOLO(str(model_path))
-    tracks = {}
-    for frame, result in enumerate(model.track(str(video), tracker="bytetrack.yaml",
-                                               conf=conf, device=device, stream=True, verbose=False)):
+    tracks, crops, best_distance = {}, {}, {}
+    for step, result in enumerate(model.track(str(video), tracker="bytetrack.yaml", vid_stride=stride,
+                                              conf=conf, device=device, stream=True, verbose=False)):
+        frame = step * stride   # frame number in the original video
         if result.boxes.id is None:
             continue
+        image = result.orig_img
+        middle = image.shape[1] / 2
         for box, c, tid in zip(result.boxes.xyxy.tolist(), result.boxes.conf.tolist(),
                                result.boxes.id.tolist()):
-            tracks.setdefault(int(tid), []).append((frame, *box, c))
-    return tracks
+            tid = int(tid)
+            tracks.setdefault(tid, []).append((frame, *box, c))
+            distance = abs((box[0] + box[2]) / 2 - middle)
+            if distance < best_distance.get(tid, float("inf")):
+                best_distance[tid] = distance
+                x1, y1, x2, y2 = (int(v) for v in box)
+                crops[tid] = image[max(0, y1):y2, max(0, x1):x2].copy()
+    return tracks, crops
 
 
 def passing_frame(rows, width):
@@ -63,6 +81,12 @@ def main():
     p.add_argument("--min-width", type=float, default=0.2, help="ignore tracks narrower than this share of the image")
     p.add_argument("--window", type=float, default=1.5, help="seconds: passings closer than this are the same bottle")
     p.add_argument("--no-video", action="store_true", help="skip the demo video (faster)")
+    p.add_argument("--stride", type=int, default=1,
+                   help="only look at every Nth frame (3 = about 3x faster; bottles stay in view ~150 frames)")
+    p.add_argument("--classifier", default=None,
+                   help="OK/NOK classifier weights (e.g. runs/classify/bottle_cls_v1/weights/best.pt)")
+    p.add_argument("--nok-threshold", type=float, default=0.5,
+                   help="a bottle is NOK if any camera view scores at least this NOK probability")
     args = p.parse_args()
 
     device = "mps" if torch.backends.mps.is_available() else "cpu"
@@ -78,14 +102,16 @@ def main():
     # 1-3: track each camera, filter noise, find passing times
     passings = {}   # camera -> list of (passing_frame, track_id)
     all_tracks = {}
+    all_crops = {}
     for cam in CAMERAS:
         print(f"Tracking {cam} ...", flush=True)
-        tracks = track_camera(args.model, videos[cam], args.conf, device)
+        tracks, crops = track_camera(args.model, videos[cam], args.conf, device, args.stride)
         all_tracks[cam] = tracks
+        all_crops[cam] = crops
         kept = []
         for tid, rows in tracks.items():
             widest = max(r[3] - r[1] for r in rows)
-            if len(rows) >= args.min_frames and widest >= args.min_width * width:
+            if len(rows) >= args.min_frames / args.stride and widest >= args.min_width * width:
                 kept.append((passing_frame(rows, width), tid))
         passings[cam] = sorted(kept)
         print(f"  {len(tracks)} raw tracks, {len(kept)} bottle passings", flush=True)
@@ -116,6 +142,37 @@ def main():
         for b in bottles:
             w.writerow([b["id"], round(b["time"] / fps, 2), len(b["cams"])] +
                        [b["cams"].get(c, "") for c in CAMERAS])
+    crop_dir = out / "crops"
+    crop_dir.mkdir(exist_ok=True)
+    for b in bottles:
+        for cam, tid in b["cams"].items():
+            crop = all_crops[cam].get(tid)
+            if crop is not None and crop.size:
+                cv2.imwrite(str(crop_dir / f"bottle{b['id']:04d}_{cam}.jpg"), crop)
+    # OK/NOK decision per bottle: highest NOK probability over its camera views
+    if args.classifier:
+        classifier = YOLO(args.classifier)
+        nok_index = [k for k, v in classifier.names.items() if v == "nok"][0]
+        for b in bottles:
+            scores = []
+            for cam, tid in b["cams"].items():
+                crop = all_crops[cam].get(tid)
+                if crop is not None and crop.size:
+                    r = classifier.predict(crop, imgsz=224, device=device, verbose=False)[0]
+                    scores.append(float(r.probs.data[nok_index]))
+            b["p_nok"] = max(scores) if scores else 0.0
+            b["decision"] = "NOK" if b["p_nok"] >= args.nok_threshold else "OK"
+        n_nok = sum(b["decision"] == "NOK" for b in bottles)
+        print(f"Classifier: {n_nok} of {len(bottles)} bottles NOK (threshold {args.nok_threshold})")
+        with open(out / "bottles.csv", "w", newline="") as f:
+            w = csv.writer(f)
+            w.writerow(["global_id", "time_s", "seen_by", "front_track", "back_left_track", "back_right_track",
+                        "p_nok", "decision"])
+            for b in bottles:
+                w.writerow([b["id"], round(b["time"] / fps, 2), len(b["cams"])] +
+                           [b["cams"].get(c, "") for c in CAMERAS] + [round(b["p_nok"], 3), b["decision"]])
+    decision_of = {b["id"]: b.get("decision") for b in bottles}
+
     seen3 = sum(len(b["cams"]) == 3 for b in bottles)
     print(f"Bottles: {len(bottles)} (seen by all 3 cameras: {seen3})")
     print(f"Table: {out / 'bottles.csv'}")
@@ -147,18 +204,22 @@ def main():
             h, w = img.shape[:2]
             sx, sy = tile_w / w, tile_h / h
             img = cv2.resize(img, (tile_w, tile_h))
-            for (x1, y1, x2, y2), gid in boxes[cam].get(frame, []):
+            for (x1, y1, x2, y2), gid in boxes[cam].get(frame - frame % args.stride, []):
                 p1, p2 = (int(x1 * sx), int(y1 * sy)), (int(x2 * sx), int(y2 * sy))
-                cv2.rectangle(img, p1, p2, (0, 220, 0), 3)
-                cv2.putText(img, f"ID {gid}", (p1[0] + 5, max(30, p1[1] + 35)),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 220, 0), 3)
+                decision = decision_of.get(gid)
+                colour = (0, 0, 255) if decision == "NOK" else (0, 220, 0)
+                label = f"ID {gid}" + (f" {decision}" if decision else "")
+                cv2.rectangle(img, p1, p2, colour, 3)
+                cv2.putText(img, label, (p1[0] + 5, max(30, p1[1] + 35)),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1.1, colour, 3)
             cv2.putText(img, cam, (10, tile_h - 12), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
             tiles.append(img)
         if len(tiles) < 3:
             break
         banner = np.zeros((40, tile_w * 3, 3), np.uint8)
-        passed = sum(b["time"] <= frame for b in bottles)
-        cv2.putText(banner, f"t = {frame / fps:6.1f} s    bottles passed: {passed}", (10, 28),
+        passed = [b for b in bottles if b["time"] <= frame]
+        nok_text = f"    NOK: {sum(b.get('decision') == 'NOK' for b in passed)}" if args.classifier else ""
+        cv2.putText(banner, f"t = {frame / fps:6.1f} s    bottles passed: {len(passed)}{nok_text}", (10, 28),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
         writer.write(np.vstack([banner, np.hstack(tiles)]))
         frame += 1
