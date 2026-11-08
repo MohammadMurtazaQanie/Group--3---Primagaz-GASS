@@ -1,5 +1,6 @@
 import argparse
 import csv
+import shutil
 from pathlib import Path
 
 import cv2
@@ -10,7 +11,7 @@ from ultralytics import YOLO
 CAMERAS = ["front", "back_left", "back_right"]
 
 
-def track_camera(model_path, video, conf, device, stride=1):
+def track_camera(model_path, video, conf, device, stride=1, ocr_dir=None, cam=""):
     model = YOLO(str(model_path))
     tracks, crops, best_distance = {}, {}, {}
     for step, result in enumerate(model.track(str(video), tracker="bytetrack.yaml", vid_stride=stride,
@@ -29,11 +30,13 @@ def track_camera(model_path, video, conf, device, stride=1):
                 best_distance[tid] = distance
                 x1, y1, x2, y2 = (int(v) for v in box)
                 crops[tid] = image[max(0, y1):y2, max(0, x1):x2].copy()
+            if ocr_dir is not None and distance < 0.3 * image.shape[1]:
+                x1, y1, x2, y2 = (int(v) for v in box)
+                cv2.imwrite(str(ocr_dir / f"{cam}_{tid}_{frame:06d}.jpg"), image[max(0, y1):y2, max(0, x1):x2])
     return tracks, crops
 
 
 def passing_frame(rows, width):
-    """Frame where the box centre is closest to the middle of the image."""
     middle = width / 2
     best = min(rows, key=lambda r: abs((r[1] + r[3]) / 2 - middle))
     return best[0]
@@ -55,6 +58,8 @@ def main():
                    help="only look at every Nth frame (3 = about 3x faster; bottles stay in view ~150 frames)")
     p.add_argument("--classifier", default=None,
                    help="OK/NOK classifier weights (e.g. runs/classify/bottle_cls_v1/weights/best.pt)")
+    p.add_argument("--ocr-crops", action="store_true",
+                   help="also save a crop of every looked-at frame near the image middle (for OCR) in ocr_crops/")
     p.add_argument("--nok-threshold", type=float, default=0.5,
                    help="a bottle is NOK if any camera view scores at least this NOK probability")
     args = p.parse_args()
@@ -70,12 +75,17 @@ def main():
     cap.release()
 
 
+    ocr_raw = None
+    if args.ocr_crops:
+        ocr_raw = out / "ocr_raw"
+        ocr_raw.mkdir(exist_ok=True)
+
     passings = {}   
     all_tracks = {}
     all_crops = {}
     for cam in CAMERAS:
         print(f"Tracking {cam} ...", flush=True)
-        tracks, crops = track_camera(args.model, videos[cam], args.conf, device, args.stride)
+        tracks, crops = track_camera(args.model, videos[cam], args.conf, device, args.stride, ocr_raw, cam)
         all_tracks[cam] = tracks
         all_crops[cam] = crops
         kept = []
@@ -119,6 +129,16 @@ def main():
             crop = all_crops[cam].get(tid)
             if crop is not None and crop.size:
                 cv2.imwrite(str(crop_dir / f"bottle{b['id']:04d}_{cam}.jpg"), crop)
+
+    if args.ocr_crops:
+        ocr_dir = out / "ocr_crops"
+        ocr_dir.mkdir(exist_ok=True)
+        for b in bottles:
+            for cam, tid in b["cams"].items():
+                for f in ocr_raw.glob(f"{cam}_{tid}_*.jpg"):
+                    f.rename(ocr_dir / f"bottle{b['id']:04d}_{cam}_{f.stem.split('_')[-1]}.jpg")
+        shutil.rmtree(ocr_raw)
+        print(f"OCR crops: {len(list(ocr_dir.glob('*.jpg')))} in {ocr_dir}")
 
     if args.classifier:
         classifier = YOLO(args.classifier)
