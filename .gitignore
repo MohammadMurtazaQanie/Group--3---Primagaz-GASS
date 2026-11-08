@@ -18,3 +18,4 @@ task_*/
 runs/sync/
 cls_dataset/
 runs/classify/
+runs/detect/bottle_track/
